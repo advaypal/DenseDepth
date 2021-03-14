@@ -23,7 +23,10 @@ def create_model(existing='', is_twohundred=False, is_halffeatures=True):
         base_model_output_shape = base_model.layers[-1].output.shape
 
         # Layer freezing?
-        for layer in base_model.layers: layer.trainable = True
+        for layer in base_model.layers[:-2]:
+            layer.trainable = False
+        for layer in base_model.layers[-2:]:
+            layer.trainable = True
 
         # Starting number of decoder filters
         if is_halffeatures:
@@ -61,6 +64,11 @@ def create_model(existing='', is_twohundred=False, is_halffeatures=True):
             sys.exit('Please provide a correct model file when using [existing] argument.')
         custom_objects = {'BilinearUpSampling2D': BilinearUpSampling2D, 'depth_loss_function': depth_loss_function}
         model = load_model(existing, custom_objects=custom_objects)
+        # Layer freezing?
+        for layer in model.layers[:-2]:
+            layer.trainable = False
+        for layer in model.layers[-2:]:
+            layer.trainable = True
         print('\nExisting model loaded.\n')
 
     print('Model created.')

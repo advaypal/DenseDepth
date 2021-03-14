@@ -23,7 +23,7 @@ parser.add_argument('--gpuids', type=str, default='0', help='IDs of GPUs to use'
 parser.add_argument('--mindepth', type=float, default=10.0, help='Minimum of input depths')
 parser.add_argument('--maxdepth', type=float, default=1000.0, help='Maximum of input depths')
 parser.add_argument('--name', type=str, default='densedepth_nyu', help='A name to attach to the training session')
-parser.add_argument('--checkpoint', type=str, default='', help='Start training from an existing model.')
+parser.add_argument('--checkpoint', type=str, default='nyu.h5', help='Start training from an existing model.')
 parser.add_argument('--full', dest='full', action='store_true', help='Full training with metrics, checkpoints, and image samples.')
 
 args = parser.parse_args()

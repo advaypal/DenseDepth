@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 
 def DepthNorm(x, maxDepth):
+    x[x == 0] = 1
     return maxDepth / x
 
 def predict(model, images, minDepth=10, maxDepth=1000, batch_size=2):

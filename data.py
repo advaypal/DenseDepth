@@ -8,17 +8,18 @@ from augment import BasicPolicy
 
 def extract_zip(input_zip):
     input_zip=ZipFile(input_zip)
+    names = [input_zip.read(name) for name in input_zip.namelist()]
     return {name: input_zip.read(name) for name in input_zip.namelist()}
 
 def nyu_resize(img, resolution=480, padding=6):
     from skimage.transform import resize
     return resize(img, (resolution, int(resolution*4/3)), preserve_range=True, mode='reflect', anti_aliasing=True )
 
-def get_nyu_data(batch_size, nyu_data_zipfile='nyu_data.zip'):
+def get_nyu_data(batch_size, nyu_data_zipfile='dense_depth_inputs.zip'):
     data = extract_zip(nyu_data_zipfile)
 
-    nyu2_train = list((row.split(',') for row in (data['data/nyu2_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
-    nyu2_test = list((row.split(',') for row in (data['data/nyu2_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
+    nyu2_train = list((row.split(',') for row in (data['dense_depth_inputs/data/fine_tune_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
+    nyu2_test = list((row.split(',') for row in (data['dense_depth_inputs/data/fine_tune_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
 
     shape_rgb = (batch_size, 480, 640, 3)
     shape_depth = (batch_size, 240, 320, 1)
@@ -65,11 +66,16 @@ class NYU_BasicAugmentRGBSequence(Sequence):
             index = min((idx * self.batch_size) + i, self.N-1)
 
             sample = self.dataset[index]
-
-            x = np.clip(np.asarray(Image.open( BytesIO(self.data[sample[0]]) )).reshape(480,640,3)/255,0,1)
-            y = np.clip(np.asarray(Image.open( BytesIO(self.data[sample[1]]) )).reshape(480,640,1)/255*self.maxDepth,0,self.maxDepth)
+            # print(sample)
+            # print(self.data.keys())
+            # import os
+            # print(os.getcwd())
+            # print(os.path.exists(prefix + sample[0]))
+            prefix = 'dense_depth_inputs/'
+            x = np.clip(np.asarray(Image.open(BytesIO(self.data[prefix + sample[0]]))).reshape(480,640,3)/255,0,1)
+            y = np.clip(np.asarray(Image.open( BytesIO(self.data[prefix + sample[1][:-1]]))).reshape(480,640,1)/255*self.maxDepth,0,self.maxDepth) # 
+            y = cv2.bitwise_not(y)
             y = DepthNorm(y, maxDepth=self.maxDepth)
-
             batch_x[i] = nyu_resize(x, 480)
             batch_y[i] = nyu_resize(y, 240)
 
@@ -100,9 +106,10 @@ class NYU_BasicRGBSequence(Sequence):
             index = min((idx * self.batch_size) + i, self.N-1)
 
             sample = self.dataset[index]
-
-            x = np.clip(np.asarray(Image.open( BytesIO(self.data[sample[0]]))).reshape(480,640,3)/255,0,1)
-            y = np.asarray(Image.open(BytesIO(self.data[sample[1]])), dtype=np.float32).reshape(480,640,1).copy().astype(float) / 10.0
+            prefix = 'dense_depth_inputs/'		
+            x = np.clip(np.asarray(Image.open( BytesIO(self.data[prefix + sample[0]]))).reshape(480,640,3)/255,0,1)
+            y = np.asarray(Image.open(BytesIO(self.data[prefix + sample[1][:-1]])), dtype=np.float32).reshape(480,640,1).copy().astype(float) / 10.0
+            # y = np.clip(np.asarray(Image.open( BytesIO(self.data[prefix + sample[1][:-1]]))).reshape(480,640,1)/255*self.maxDepth,0,self.maxDepth) # 
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = nyu_resize(x, 480)
